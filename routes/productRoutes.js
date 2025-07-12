@@ -135,7 +135,7 @@ router.get('/search', async (req, res) => {
     const searchTerm = `%${query.toLowerCase()}%`;
 
     const result = await db.query(
-      `SELECT * FROM platinum WHERE LOWER(name) LIKE $1 ORDER BY name ASC LIMIT 50`,
+      `SELECT * FROM primarytable WHERE LOWER(name) LIKE $1 ORDER BY name ASC LIMIT 50`,
       [searchTerm]
     );
 
