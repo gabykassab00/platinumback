@@ -199,28 +199,104 @@
 
 
 
+// const express = require('express');
+// const cors = require('cors');
+// const path = require('path');
+// const fs = require('fs');
+// const sharp = require('sharp');
+// const compression = require('compression'); // ✅ compresses all responses
+// const productRoutes = require('./routes/productRoutes');
+
+// const app = express();
+
+// // Middleware
+// app.use(cors());
+// app.use(express.json());
+// app.use(compression()); // ✅ gzip compression
+
+// // API Routes
+// app.use('/api/products', productRoutes);
+
+// // ✅ Optimized Image Handler with Caching, WebP support, and Dynamic Resizing
+// app.get('/images/:folder/:filename', async (req, res) => {
+//   const { folder, filename } = req.params;
+//   const width = parseInt(req.query.w) || 600; // ✅ optional ?w=300
+//   const imagePath = path.join(__dirname, 'images', folder, filename);
+
+//   try {
+//     if (!fs.existsSync(imagePath)) {
+//       return res.status(404).send('Image not found');
+//     }
+
+//     const image = sharp(imagePath);
+//     const metadata = await image.metadata();
+
+//     res.setHeader('Cache-Control', 'public, max-age=31536000'); // ✅ cache for 1 year
+
+//     const accept = req.headers['accept'] || '';
+//     if (accept.includes('image/webp')) {
+//       res.setHeader('Content-Type', 'image/webp');
+//       return image.resize({ width }).webp({ quality: 75 }).pipe(res); // ✅ convert to WebP
+//     }
+
+//     res.setHeader('Content-Type', `image/${metadata.format}`);
+//     return image.resize({ width }).toFormat(metadata.format).pipe(res); // ✅ serve resized
+//   } catch (err) {
+//     console.error('Image error:', err.message);
+//     return res.status(500).send('Image processing failed');
+//   }
+// });
+
+// module.exports = app;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const compression = require('compression'); // ✅ compresses all responses
+const compression = require('compression');
+require('dotenv').config(); // ✅ Load environment variables
+
 const productRoutes = require('./routes/productRoutes');
+const emailRoutes = require('./routes/emailRoutes'); // ✅ EmailJS route
 
 const app = express();
 
+// =========================
 // Middleware
+// =========================
 app.use(cors());
 app.use(express.json());
-app.use(compression()); // ✅ gzip compression
+app.use(compression()); // ✅ Enable Gzip compression
 
+// =========================
 // API Routes
+// =========================
 app.use('/api/products', productRoutes);
+app.use('/api/email', emailRoutes); // ✅ Email sending route
 
-// ✅ Optimized Image Handler with Caching, WebP support, and Dynamic Resizing
+// =========================
+// Optimized Image Handling
+// =========================
 app.get('/images/:folder/:filename', async (req, res) => {
   const { folder, filename } = req.params;
-  const width = parseInt(req.query.w) || 600; // ✅ optional ?w=300
+  const width = parseInt(req.query.w) || 600;
   const imagePath = path.join(__dirname, 'images', folder, filename);
 
   try {
@@ -231,20 +307,23 @@ app.get('/images/:folder/:filename', async (req, res) => {
     const image = sharp(imagePath);
     const metadata = await image.metadata();
 
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // ✅ cache for 1 year
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
 
     const accept = req.headers['accept'] || '';
     if (accept.includes('image/webp')) {
       res.setHeader('Content-Type', 'image/webp');
-      return image.resize({ width }).webp({ quality: 75 }).pipe(res); // ✅ convert to WebP
+      return image.resize({ width }).webp({ quality: 75 }).pipe(res);
     }
 
     res.setHeader('Content-Type', `image/${metadata.format}`);
-    return image.resize({ width }).toFormat(metadata.format).pipe(res); // ✅ serve resized
+    return image.resize({ width }).toFormat(metadata.format).pipe(res);
   } catch (err) {
-    console.error('Image error:', err.message);
+    console.error('Image processing error:', err.message);
     return res.status(500).send('Image processing failed');
   }
 });
 
+// =========================
+// Export App
+// =========================
 module.exports = app;
