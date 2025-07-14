@@ -70,10 +70,6 @@ const sendEmail = async ({
   const templateID = process.env.EMAILJS_TEMPLATE_ID;
   const privateToken = process.env.EMAILJS_PRIVATE_KEY;
 
-  if (!serviceID || !templateID || !privateToken) {
-    throw new Error('Missing EmailJS config');
-  }
-
   const itemList = Array.isArray(items)
     ? items.map(item =>
         `${item.name} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`
@@ -96,11 +92,11 @@ const sendEmail = async ({
         service_id: serviceID,
         template_id: templateID,
         template_params: templateParams
-        // ❌ DO NOT add user_id here
+        // ✅ DO NOT add user_id
       },
       {
         headers: {
-          Authorization: `Bearer ${privateToken}` // ✅ This is all that’s needed
+          Authorization: `Bearer ${privateToken}` // ✅ use only this
         }
       }
     );
