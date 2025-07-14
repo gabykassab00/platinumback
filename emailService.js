@@ -56,6 +56,7 @@
 
 
 
+// services/emailService.js
 const axios = require('axios');
 
 const sendEmail = async ({
@@ -64,26 +65,44 @@ const sendEmail = async ({
   address,
   city,
   total,
-  items,
+  items
 }) => {
+  // Load environment variables
   const serviceID = process.env.EMAILJS_SERVICE_ID;
   const templateID = process.env.EMAILJS_TEMPLATE_ID;
   const privateToken = process.env.EMAILJS_PRIVATE_KEY;
 
-  const itemList = Array.isArray(items)
-    ? items.map(item =>
-        `${item.name} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`
-      ).join('\n')
-    : 'No items';
+  // Validate environment variables
+  if (!serviceID || !templateID || !privateToken) {
+    throw new Error('❌ Missing one or more EmailJS credentials in environment variables.');
+  }
 
+  // Build item list string for the email
+  const itemList = Array.isArray(items)
+    ? items.map(item => {
+        const name = item.name || 'Unnamed';
+        const quantity = Number(item.quantity || 1);
+        const price = Number(item.price || 0);
+        return `${name} (x${quantity}) - $${(price * quantity).toFixed(2)}`;
+      }).join('\n')
+    : 'No items listed';
+
+  // Prepare template parameters
   const templateParams = {
-    to_name,
-    to_email,
-    address,
-    city,
-    total: `$${Number(total).toFixed(2)}`,
+    to_name: to_name || 'Customer',
+    to_email: to_email || 'example@example.com',
+    address: address || 'N/A',
+    city: city || 'N/A',
+    total: `$${Number(total || 0).toFixed(2)}`,
     item_list: itemList
   };
+
+  // Optional: Debug log (remove in production)
+  console.log('📤 Sending email via EmailJS with payload:', {
+    service_id: serviceID,
+    template_id: templateID,
+    template_params: templateParams
+  });
 
   try {
     const response = await axios.post(
@@ -92,19 +111,20 @@ const sendEmail = async ({
         service_id: serviceID,
         template_id: templateID,
         template_params: templateParams
-        // ✅ DO NOT add user_id
+        // ❌ DO NOT INCLUDE user_id
       },
       {
         headers: {
-          Authorization: `Bearer ${privateToken}` // ✅ use only this
+          Authorization: `Bearer ${privateToken}` // ✅ Required for backend use
         }
       }
     );
 
-    console.log('✅ Email sent via EmailJS:', response.data);
+    console.log('✅ Email successfully sent via EmailJS:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ Error sending email via EmailJS:', error.response?.data || error.message);
+    const errMsg = error.response?.data || error.message;
+    console.error('❌ Error sending email via EmailJS:', errMsg);
     throw new Error('Failed to send email');
   }
 };
