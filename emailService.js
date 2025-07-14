@@ -13,16 +13,23 @@ const sendEmail = async ({
   const templateID = process.env.EMAILJS_TEMPLATE_ID;
   const publicKey = process.env.EMAILJS_PUBLIC_KEY;
 
-  const itemList = items.map(item =>
-    `${item.name} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`
-  ).join('\n');
+  // Fallback safety
+  const safeTotal = Number(total || 0);
+  const itemList = Array.isArray(items)
+    ? items.map(item => {
+        const quantity = Number(item.quantity || 0);
+        const price = Number(item.price || 0);
+        const name = item.name || 'Unnamed Item';
+        return `${name} (x${quantity}) - $${(price * quantity).toFixed(2)}`;
+      }).join('\n')
+    : 'No items listed';
 
   const templateParams = {
-    to_name,
-    to_email,
-    address,
-    city,
-    total: `$${total.toFixed(2)}`,
+    to_name: to_name || 'Customer',
+    to_email: to_email || 'missing@email.com',
+    address: address || 'N/A',
+    city: city || 'N/A',
+    total: `$${safeTotal.toFixed(2)}`,
     item_list: itemList,
   };
 
@@ -38,7 +45,7 @@ const sendEmail = async ({
     return response.data;
   } catch (error) {
     console.error('❌ Error sending email via EmailJS:', error.response?.data || error.message);
-    throw new Error('Failed to send email');
+    throw new Error(error.response?.data?.error || 'Failed to send email');
   }
 };
 
