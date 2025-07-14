@@ -94,7 +94,7 @@ const sendEmail = async ({
 
   try {
     const response = await axios.post(
-      'https://api.emailjs.com/api/v1.0/email/send-private',
+      'https://api.emailjs.com/api/v1.0/email/send',
       {
         service_id: serviceID,
         template_id: templateID,
