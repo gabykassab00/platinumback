@@ -56,9 +56,6 @@
 
 
 
-
-
-
 const axios = require('axios');
 
 const sendEmail = async ({
@@ -74,7 +71,7 @@ const sendEmail = async ({
   const privateToken = process.env.EMAILJS_PRIVATE_KEY;
 
   if (!serviceID || !templateID || !privateToken) {
-    throw new Error('Missing EmailJS configuration');
+    throw new Error('Missing EmailJS config');
   }
 
   const itemList = Array.isArray(items)
@@ -99,10 +96,11 @@ const sendEmail = async ({
         service_id: serviceID,
         template_id: templateID,
         template_params: templateParams
+        // ❌ DO NOT add user_id here
       },
       {
         headers: {
-          Authorization: `Bearer ${privateToken}`
+          Authorization: `Bearer ${privateToken}` // ✅ This is all that’s needed
         }
       }
     );
