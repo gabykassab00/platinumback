@@ -127,7 +127,9 @@
 
 const pool = require('../config/db');
 
-// Get paginated & filtered products
+// ==========================
+// GET paginated & filtered products
+// ==========================
 const getProducts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 12;
@@ -137,28 +139,23 @@ const getProducts = async (req, res) => {
     const values = [];
     let paramIndex = 1;
 
-    // Dynamic filters
     if (req.query.genre) {
-      filters.push(`LOWER(genre) = LOWER($${paramIndex})`);
+      filters.push(`LOWER(genre) = LOWER($${paramIndex++})`);
       values.push(req.query.genre);
-      paramIndex++;
     }
 
     if (req.query.maxPrice) {
-      filters.push(`price <= $${paramIndex}`);
+      filters.push(`price <= $${paramIndex++}`);
       values.push(parseFloat(req.query.maxPrice));
-      paramIndex++;
     }
 
     if (req.query.brand) {
-      filters.push(`LOWER(brand) = LOWER($${paramIndex})`);
+      filters.push(`LOWER(brand) = LOWER($${paramIndex++})`);
       values.push(req.query.brand);
-      paramIndex++;
     }
 
-    const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+    const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
-    // Build main product query
     const productsQuery = `
       SELECT * FROM myschema.primarytable
       ${whereClause}
@@ -167,15 +164,11 @@ const getProducts = async (req, res) => {
     `;
     values.push(limit, offset);
 
-    // Count query (without limit/offset)
-    const countQuery = `
-      SELECT COUNT(*) FROM myschema.primarytable
-      ${whereClause}
-    `;
+    const countQuery = `SELECT COUNT(*) FROM myschema.primarytable ${whereClause}`;
 
     const [productsResult, countResult] = await Promise.all([
       pool.query(productsQuery, values),
-      pool.query(countQuery, values.slice(0, paramIndex - 1)) // only filter values
+      pool.query(countQuery, values.slice(0, paramIndex - 1))
     ]);
 
     res.json({
@@ -188,6 +181,30 @@ const getProducts = async (req, res) => {
   }
 };
 
+// ==========================
+// GET single product by ID
+// ==========================
+const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'SELECT * FROM myschema.primarytable WHERE id = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching product by ID:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
-  getProducts
+  getProducts,
+  getProductById // ✅ this is now exported
 };

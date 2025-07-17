@@ -250,17 +250,12 @@ const router = express.Router();
 const db = require('../config/db');
 const { getProducts, getProductById } = require('../controllers/productsController');
 
-// ==============================
-// GET /api/products/ → All products (with pagination/filter support)
-// ==============================
+// Get all products (with pagination/filter support)
 router.get('/', getProducts);
 
-// ==============================
-// GET /api/products/search?q= → Full text search
-// ==============================
+// Search products
 router.get('/search', async (req, res) => {
   const query = req.query.q;
-
   if (!query || query.trim() === '') {
     return res.status(400).json({ error: 'Search query is required.' });
   }
@@ -271,7 +266,6 @@ router.get('/search', async (req, res) => {
       `SELECT * FROM myschema.primarytable WHERE LOWER(name) LIKE $1 ORDER BY name ASC LIMIT 50`,
       [searchTerm]
     );
-
     res.json(result.rows);
   } catch (err) {
     console.error('Error searching products:', err);
@@ -279,9 +273,7 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// ==============================
-// GET /api/products/recommend → Recommendations
-// ==============================
+// Recommendations
 router.get('/recommend', async (req, res) => {
   const { baseImagePath, genre } = req.query;
 
@@ -296,8 +288,6 @@ router.get('/recommend', async (req, res) => {
 
     query += ` ORDER BY RANDOM() LIMIT 4`;
 
-    console.log('Running query:', query, 'with values:', values);
-
     const result = await db.query(query, values);
     res.json(result.rows);
   } catch (error) {
@@ -306,9 +296,7 @@ router.get('/recommend', async (req, res) => {
   }
 });
 
-// ==============================
-// GET /api/products/:id → Single product by ID
-// ==============================
+// ✅ MUST be last to avoid capturing other routes like "/search"
 router.get('/:id', getProductById);
 
 module.exports = router;
