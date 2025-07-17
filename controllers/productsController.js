@@ -127,7 +127,7 @@
 
 const pool = require('../config/db');
 
-// Get paginated products
+// Get paginated & filtered products
 const getProducts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 12;
@@ -135,37 +135,47 @@ const getProducts = async (req, res) => {
 
     const filters = [];
     const values = [];
-    let index = 1;
+    let paramIndex = 1;
 
+    // Dynamic filters
     if (req.query.genre) {
-      filters.push(`genre ILIKE $${index++}`);
+      filters.push(`LOWER(genre) = LOWER($${paramIndex})`);
       values.push(req.query.genre);
+      paramIndex++;
     }
 
     if (req.query.maxPrice) {
-      filters.push(`price <= $${index++}`);
+      filters.push(`price <= $${paramIndex}`);
       values.push(parseFloat(req.query.maxPrice));
+      paramIndex++;
     }
 
     if (req.query.brand) {
-      filters.push(`brand ILIKE $${index++}`);
+      filters.push(`LOWER(brand) = LOWER($${paramIndex})`);
       values.push(req.query.brand);
+      paramIndex++;
     }
 
     const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
 
+    // Build main product query
     const productsQuery = `
       SELECT * FROM myschema.primarytable
       ${whereClause}
       ORDER BY id DESC
-      LIMIT $${index++} OFFSET $${index}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     values.push(limit, offset);
 
-    const countQuery = `SELECT COUNT(*) FROM myschema.primarytable ${whereClause}`;
+    // Count query (without limit/offset)
+    const countQuery = `
+      SELECT COUNT(*) FROM myschema.primarytable
+      ${whereClause}
+    `;
+
     const [productsResult, countResult] = await Promise.all([
       pool.query(productsQuery, values),
-      pool.query(countQuery, values.slice(0, values.length - 2))
+      pool.query(countQuery, values.slice(0, paramIndex - 1)) // only filter values
     ]);
 
     res.json({
