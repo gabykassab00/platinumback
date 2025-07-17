@@ -265,6 +265,75 @@
 
 
 
+// const express = require('express');
+// const cors = require('cors');
+// const path = require('path');
+// const fs = require('fs');
+// const sharp = require('sharp');
+// const compression = require('compression');
+// require('dotenv').config(); // ✅ Load environment variables
+
+// const productRoutes = require('./routes/productRoutes');
+// const emailRoutes = require('./routes/emailRoutes'); // ✅ EmailJS route
+
+// const app = express();
+
+// // =========================
+// // Middleware
+// // =========================
+// app.use(cors());
+// app.use(express.json());
+// app.use(compression()); // ✅ Enable Gzip compression
+
+// // =========================
+// // API Routes
+// // =========================
+// app.use('/api/products', productRoutes);
+// app.use('/api/email', emailRoutes); // ✅ Email sending route
+
+// // =========================
+// // Optimized Image Handling
+// // =========================
+// app.get('/images/:folder/:filename', async (req, res) => {
+//   const { folder, filename } = req.params;
+//   const width = parseInt(req.query.w) || 600;
+//   const imagePath = path.join(__dirname, 'images', folder, filename);
+
+//   try {
+//     if (!fs.existsSync(imagePath)) {
+//       return res.status(404).send('Image not found');
+//     }
+
+//     const image = sharp(imagePath);
+//     const metadata = await image.metadata();
+
+//     res.setHeader('Cache-Control', 'public, max-age=31536000');
+
+//     const accept = req.headers['accept'] || '';
+//     if (accept.includes('image/webp')) {
+//       res.setHeader('Content-Type', 'image/webp');
+//       return image.resize({ width }).webp({ quality: 75 }).pipe(res);
+//     }
+
+//     res.setHeader('Content-Type', `image/${metadata.format}`);
+//     return image.resize({ width }).toFormat(metadata.format).pipe(res);
+//   } catch (err) {
+//     console.error('Image processing error:', err.message);
+//     return res.status(500).send('Image processing failed');
+//   }
+// });
+
+// // =========================
+// // Export App
+// // =========================
+// module.exports = app;
+
+
+
+
+
+
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -281,7 +350,11 @@ const app = express();
 // =========================
 // Middleware
 // =========================
-app.use(cors());
+app.use(cors({
+  origin: 'https://platinumfront.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(compression()); // ✅ Enable Gzip compression
 
