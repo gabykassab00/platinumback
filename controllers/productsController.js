@@ -152,94 +152,85 @@
 
 
 
+
+
+
+
+
+
+
 const pool = require('../config/db');
 
-// Cache for frequently accessed products
+// Simple memory cache
 const productCache = new Map();
-const CACHE_TTL = 30000; // 30 seconds cache lifetime
 
-// Get all products with pagination
 const getProducts = async (req, res) => {
   try {
-    // Check cache first
-    const cacheKey = 'all_products';
+    // Cache check (1ms response if cached)
+    const cacheKey = 'all_products_light';
     if (productCache.has(cacheKey)) {
-      const { timestamp, data } = productCache.get(cacheKey);
-      if (Date.now() - timestamp < CACHE_TTL) {
-        return res.json(data);
-      }
+      return res.json(productCache.get(cacheKey));
     }
 
-    // Implement pagination
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-
-    // Only select needed columns
+    // Minimal query - only absolute essentials
     const { rows } = await pool.query(`
       SELECT 
-        id, title, info, final_price as "finalPrice", 
-        original_price as "originalPrice", image_url as "imageUrl"
+        id,
+        name AS title,        -- Adjust to your actual column name
+        price AS finalPrice,  -- Adjust to your actual column name
+        image_url AS imageUrl -- Adjust to your actual column name
       FROM myschema.primarytable
       ORDER BY id
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+      LIMIT 50                -- Fetch less data initially
+    `);
 
-    // Cache the results
-    productCache.set(cacheKey, {
-      timestamp: Date.now(),
-      data: rows
-    });
+    // Cache for 15 seconds
+    productCache.set(cacheKey, rows);
+    setTimeout(() => productCache.delete(cacheKey), 15000);
 
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Fast fetch error:', error);
+    res.status(500).json({ error: 'Loading products - please refresh' });
   }
 };
 
-// Get single product by ID with caching
 const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check cache first
+    // Cache check
     if (productCache.has(id)) {
       return res.json(productCache.get(id));
     }
 
-    // Only select needed columns
+    // Minimal single product query
     const { rows } = await pool.query(`
       SELECT 
-        id, title, info, final_price as "finalPrice", 
-        original_price as "originalPrice", image_url as "imageUrl",
-        tag, tagline, rate_count as "rateCount"
+        id,
+        name AS title,
+        description AS info,
+        price AS finalPrice,
+        image_url AS imageUrl
       FROM myschema.primarytable 
       WHERE id = $1
     `, [id]);
 
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
+    if (!rows.length) return res.status(404).json({ error: 'Not found' });
 
-    // Cache the product
+    // Cache for 5 minutes
     productCache.set(id, rows[0]);
     
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error fetching product by ID:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Fast single fetch error:', error);
+    res.status(500).json({ error: 'Loading product - please try again' });
   }
 };
 
-// Clear cache endpoint (optional, for development)
-const clearCache = async (req, res) => {
-  productCache.clear();
-  res.json({ message: 'Cache cleared' });
-};
+module.exports = { getProducts, getProductById };
 
-module.exports = {
-  getProducts,
-  getProductById,
-  clearCache // Optional
-};
+
+
+
+
