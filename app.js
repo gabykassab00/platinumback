@@ -411,6 +411,20 @@ app.use('/api/email', emailRoutes); // ✅ Email sending route
 // =========================
 // Optimized Image Handling (Improved)
 // =========================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.get('/images/:folder/:filename', async (req, res) => {
   const { folder, filename } = req.params;
   const width = parseInt(req.query.w) || 600; // Default width

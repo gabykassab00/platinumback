@@ -73,9 +73,45 @@
 const pool = require('../config/db');
 
 // Get all products
+// const getProducts = async (req, res) => {
+//   try {
+//     const { rows } = await pool.query('SELECT * FROM myschema.primarytable');
+//     res.json(rows);
+//   } catch (error) {
+//     console.error('Error fetching products:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+// controllers/productsController.js
+
 const getProducts = async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM myschema.primarytable');
+    const { genre, type, brand } = req.query;
+    let query = 'SELECT * FROM myschema.primarytable WHERE 1=1';
+    const values = [];
+    let index = 1;
+
+    if (genre) {
+      query += ` AND genre = $${index++}`;
+      values.push(genre);
+    }
+
+    if (type) {
+      query += ` AND type = $${index++}`;
+      values.push(type);
+    }
+
+    if (brand) {
+      const brandList = brand.split(','); // For handling multiple brands
+      const brandConditions = brandList.map((_, i) => `brand = $${index + i}`);
+      query += ` AND (${brandConditions.join(' OR ')})`;
+      values.push(...brandList);
+      index += brandList.length;
+    }
+
+    const { rows } = await pool.query(query, values);
     res.json(rows);
   } catch (error) {
     console.error('Error fetching products:', error);
