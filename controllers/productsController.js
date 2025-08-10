@@ -70,10 +70,86 @@
 
 
 
-const pool = require('../config/db');
+// const pool = require('../config/db');
+
+// const getProducts = async (req, res) => {
+//   try {
+//     const { genre, type, brand } = req.query;
+//     let query = 'SELECT * FROM myschema.primarytable WHERE 1=1';
+//     const values = [];
+//     let index = 1;
+
+//     if (genre) {
+//       query += ` AND genre = $${index++}`;
+//       values.push(genre);
+//     }
+
+//     if (type) {
+//       query += ` AND type = $${index++}`;
+//       values.push(type);
+//     }
+
+//     if (brand) {
+//       const brandList = brand.split(','); // For handling multiple brands
+//       const brandConditions = brandList.map((_, i) => `brand = $${index + i}`);
+//       query += ` AND (${brandConditions.join(' OR ')})`;
+//       values.push(...brandList);
+//       index += brandList.length;
+//     }
+
+//     const { rows } = await pool.query(query, values);
+//     res.json(rows);
+//   } catch (error) {
+//     console.error('Error fetching products:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+// // Get single product by ID
+// const getProductById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { rows } = await pool.query('SELECT * FROM myschema.primarytable WHERE id = $1', [id]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({ error: 'Product not found' });
+//     }
+
+//     res.json(rows[0]);
+//   } catch (error) {
+//     console.error('Error fetching product by ID:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+// module.exports = {
+//   getProducts,
+//   getProductById
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const { getClient } = require('../config/db');
 
 const getProducts = async (req, res) => {
+  let client;
   try {
+    client = await getClient();
     const { genre, type, brand } = req.query;
     let query = 'SELECT * FROM myschema.primarytable WHERE 1=1';
     const values = [];
@@ -90,39 +166,23 @@ const getProducts = async (req, res) => {
     }
 
     if (brand) {
-      const brandList = brand.split(','); // For handling multiple brands
+      const brandList = brand.split(',');
       const brandConditions = brandList.map((_, i) => `brand = $${index + i}`);
       query += ` AND (${brandConditions.join(' OR ')})`;
       values.push(...brandList);
       index += brandList.length;
     }
 
-    const { rows } = await pool.query(query, values);
+    const { rows } = await client.query(query, values);
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching products:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    if (client) client.release(); // Important: Always release the client
   }
-};
-
-// Get single product by ID
-const getProductById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM myschema.primarytable WHERE id = $1', [id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
-
-    res.json(rows[0]);
-  } catch (error) {
-    console.error('Error fetching product by ID:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-module.exports = {
-  getProducts,
-  getProductById
 };
