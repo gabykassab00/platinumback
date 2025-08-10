@@ -72,20 +72,6 @@
 
 const pool = require('../config/db');
 
-// Get all products
-// const getProducts = async (req, res) => {
-//   try {
-//     const { rows } = await pool.query('SELECT * FROM myschema.primarytable');
-//     res.json(rows);
-//   } catch (error) {
-//     console.error('Error fetching products:', error);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// };
-
-
-// controllers/productsController.js
-
 const getProducts = async (req, res) => {
   try {
     const { genre, type, brand } = req.query;
