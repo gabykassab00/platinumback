@@ -144,45 +144,71 @@
 
 
 
+// controllers/productController.js
 const { getClient } = require('../config/db');
 
 const getProducts = async (req, res) => {
   let client;
   try {
     client = await getClient();
+    
+    // Validate client connection
+    await client.query('SELECT 1');
+    
     const { genre, type, brand } = req.query;
     let query = 'SELECT * FROM myschema.primarytable WHERE 1=1';
     const values = [];
-    let index = 1;
+    let paramIndex = 1;
 
+    // Add filters
     if (genre) {
-      query += ` AND genre = $${index++}`;
+      query += ` AND genre = $${paramIndex++}`;
       values.push(genre);
     }
 
     if (type) {
-      query += ` AND type = $${index++}`;
+      query += ` AND type = $${paramIndex++}`;
       values.push(type);
     }
 
     if (brand) {
-      const brandList = brand.split(',');
-      const brandConditions = brandList.map((_, i) => `brand = $${index + i}`);
-      query += ` AND (${brandConditions.join(' OR ')})`;
-      values.push(...brandList);
-      index += brandList.length;
+      const brands = brand.split(',').filter(Boolean);
+      if (brands.length > 0) {
+        query += ` AND brand IN (${brands.map((_, i) => `$${paramIndex + i}`).join(',')})`;
+        values.push(...brands);
+        paramIndex += brands.length;
+      }
     }
 
+    // Execute query
     const { rows } = await client.query(query, values);
     res.json(rows);
+    
   } catch (error) {
-    console.error('Error fetching products:', {
+    console.error('Database error:', {
       message: error.message,
-      stack: error.stack,
       code: error.code,
+      query: error.query,
+      parameters: error.parameters
     });
-    res.status(500).json({ error: 'Internal server error' });
+    
+    res.status(500).json({ 
+      error: 'Database operation failed',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+    
   } finally {
-    if (client) client.release(); // Important: Always release the client
+    // Ensure client is always released
+    if (client) {
+      try {
+        await client.release();
+      } catch (releaseError) {
+        console.error('Error releasing client:', releaseError);
+      }
+    }
   }
+};
+
+module.exports = {
+  getProducts
 };
