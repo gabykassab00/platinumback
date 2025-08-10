@@ -425,52 +425,67 @@ app.use('/api/email', emailRoutes); // ✅ Email sending route
 
 
 
-app.get('/images/:folder/:filename', async (req, res) => {
-  const { folder, filename } = req.params;
-  const width = parseInt(req.query.w) || 600; // Default width
-  const quality = parseInt(req.query.q) || 75; // Default quality
-  const imagePath = path.join(__dirname, 'images', folder, filename);
+// app.get('/images/:folder/:filename', async (req, res) => {
+//   const { folder, filename } = req.params;
+//   const width = parseInt(req.query.w) || 600; // Default width
+//   const quality = parseInt(req.query.q) || 75; // Default quality
+//   const imagePath = path.join(__dirname, 'images', folder, filename);
 
-  try {
-    if (!fs.existsSync(imagePath)) {
-      return res.status(404).send('Image not found');
-    }
+//   try {
+//     if (!fs.existsSync(imagePath)) {
+//       return res.status(404).send('Image not found');
+//     }
 
-    // Set aggressive caching (1 year)
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+//     // Set aggressive caching (1 year)
+//     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     
-    // Auto-format detection with WebP preference
-    const accept = req.headers['accept'] || '';
-    const useWebP = accept.includes('image/webp');
-    const image = sharp(imagePath);
+//     // Auto-format detection with WebP preference
+//     const accept = req.headers['accept'] || '';
+//     const useWebP = accept.includes('image/webp');
+//     const image = sharp(imagePath);
 
-    if (useWebP) {
-      res.setHeader('Content-Type', 'image/webp');
-      return image
-        .resize({ width, withoutEnlargement: true }) // Don't enlarge small images
-        .webp({ quality, reductionEffort: 6 }) // Better compression
-        .pipe(res);
-    }
+//     if (useWebP) {
+//       res.setHeader('Content-Type', 'image/webp');
+//       return image
+//         .resize({ width, withoutEnlargement: true }) // Don't enlarge small images
+//         .webp({ quality, reductionEffort: 6 }) // Better compression
+//         .pipe(res);
+//     }
 
-    // Fallback to original format but optimized
-    const metadata = await image.metadata();
-    res.setHeader('Content-Type', `image/${metadata.format}`);
-    return image
-      .resize({ width, withoutEnlargement: true })
-      .jpeg({ quality, mozjpeg: true }) // Better JPEG compression
-      .png({ quality, compressionLevel: 9 }) // Better PNG compression
-      .toFormat(metadata.format)
-      .pipe(res);
-  } catch (err) {
-    console.error('Image processing error:', err.message);
-    // Fallback to original image if processing fails
-    if (fs.existsSync(imagePath)) {
-      return res.sendFile(imagePath);
-    }
-    return res.status(500).send('Image processing failed');
-  }
-});
-// =========================
-// Export App
-// =========================
-module.exports = app;
+//     // Fallback to original format but optimized
+//     const metadata = await image.metadata();
+//     res.setHeader('Content-Type', `image/${metadata.format}`);
+//     return image
+//       .resize({ width, withoutEnlargement: true })
+//       .jpeg({ quality, mozjpeg: true }) // Better JPEG compression
+//       .png({ quality, compressionLevel: 9 }) // Better PNG compression
+//       .toFormat(metadata.format)
+//       .pipe(res);
+//   } catch (err) {
+//     console.error('Image processing error:', err.message);
+//     // Fallback to original image if processing fails
+//     if (fs.existsSync(imagePath)) {
+//       return res.sendFile(imagePath);
+//     }
+//     return res.status(500).send('Image processing failed');
+//   }
+// });
+// // =========================
+// // Export App
+// // =========================
+// module.exports = app;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
